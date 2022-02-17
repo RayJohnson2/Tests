@@ -2,6 +2,8 @@ import streamlit as st
 
 my_page = st.sidebar.radio('Page Navigation', ['Home', 'Slider', 'Contact'])
 
+st.session_state.update(st.session_state)
+
 if 'slider1' not in st.session_state:
     st.session_state.slider1 = 0
 if 'check1' not in st.session_state:
@@ -23,6 +25,8 @@ def slider():
     st.write("Welcome to the slider page")
     st.session_state
     slide1 = st.slider('this is a slider',min_value=0,max_value=15,value=st.session_state.slider1 ,key='slider1' )
+    #slide1 = st.slider('this is a slider',min_value=0,max_value=15,key='slider1' )
+    
     slide1
     
 def contact():
