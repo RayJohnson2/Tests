@@ -9,14 +9,10 @@ if 'slider1' not in st.session_state:
 if 'check1' not in st.session_state:
     st.session_state.check1 = False
 
-def CB_Slider1():
-    #st.session_state.slider1 = slide1
-    pass
-    
 def home():
     st.write("Welcome to home page")
     st.session_state
-    st.checkbox("Check me", value=st.session_state.check1, key='check1')
+    st.checkbox("Check me", key='check1')
     if st.button("Click Home"):
         st.write("Welcome to home page")
 
@@ -25,8 +21,6 @@ def slider():
     st.write("Welcome to the slider page")
     st.session_state
     slide1 = st.slider('this is a slider',min_value=0,max_value=15,value=st.session_state.slider1 ,key='slider1' )
-    #slide1 = st.slider('this is a slider',min_value=0,max_value=15,key='slider1' )
-    
     slide1
     
 def contact():
