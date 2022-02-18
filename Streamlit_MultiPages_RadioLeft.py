@@ -34,7 +34,7 @@ def slider():
     st.write('Slider position:',slide1)
     
 def contact():
-    st.title('Welcome to contact page#--- ')
+    st.title('Welcome to contact page')
     st.write(f'Multipage app. Streamlit {st.__version__}')
     if st.button('Click Contact'):
         st.write('Welcome to contact page')
