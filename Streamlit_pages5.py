@@ -26,6 +26,7 @@ def slider():
     
 def contact():
     st.title('Welcome to contact page')
+    st.write(f'Multipage app. Streamlit {st.__version__}')
     if st.button('Click Contact'):
         st.write('Welcome to contact page')
     return
@@ -39,7 +40,7 @@ def CB_SliderButton():
 def CB_ContactButton():
     st.session_state.active_page = 'Contact'
     
-st.write(f'Multipage app. Streamlit {st.__version__}')
+#st.write(f'Multipage app. Streamlit {st.__version__}')
 col1, col2, col3 = st.columns(3)
 
 #col1.header('Home')
