@@ -17,27 +17,30 @@ if 'active_page' not in st.session_state:
     st.session_state.active_page = 'Home'
     st.session_state.slider1 = 0
     st.session_state.check1 = False
-    st.session_state.radiobuttons = 'Home' 
+    st.session_state.radiobuttons = 'Home'
 
 #--- Payload code of each page
 def home():
-    st.write('Welcome to home page')
+    st.write('Welcome to home page. Greetings from Eddy')
     link = '[GitHub](http://github.com)'
     st.markdown(link, unsafe_allow_html=True)
+    link = '[DevOTechS](http://devotechs.com)'
+    st.markdown(link, unsafe_allow_html=True)
+
     st.checkbox('Check me', key='check1')
     if st.button('Click Home'):
         st.write('Welcome to home page')
 
 def slider():
     st.write('Welcome to the slider page')
-    slide1 = st.slider('this is a slider',min_value=0,max_value=15,key='slider1' )    
+    slide1 = st.slider('this is a slider',min_value=0,max_value=15,key='slider1' )
     st.write('Slider position:',slide1)
-    
+
 def contact():
-    st.title('Welcome to contact page')
+    st.title('Welcome to this contact page')
     st.write(f'Multipage app. Streamlit {st.__version__}')
     if st.button('Click Contact'):
-        st.write('Welcome to contact page')
+        st.write('Welcome to contact page. Greetings from Cyril!')
 
 #--- Callback functions
 def CB_RadioButton():
@@ -56,6 +59,6 @@ elif st.session_state.active_page == 'Slider':
     slider()
 elif st.session_state.active_page == 'Contact':
     contact()
- 
 
-    
+
+
