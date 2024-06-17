@@ -18,6 +18,8 @@ if 'active_page' not in st.session_state:
     st.session_state.slider1 = 0
     st.session_state.check1 = False
     st.session_state.radiobuttons = 'Home'
+    st.session_state.k_number1 = 100
+    st.session_state.k_number2 = 100
 
 #--- Payload code of each page
 def home():
@@ -35,6 +37,10 @@ def slider():
     st.write('Welcome to the slider page')
     slide1 = st.slider('this is a slider',min_value=0,max_value=15,key='slider1' )
     st.write('Slider position:',slide1)
+    number1 = st.number_input("Insert a number", key="k_number1")
+    st.write("The current number is ", number1)
+    number2 = st.number_input("Insert a number", value=50, key="k_number2")
+    st.write("The current number is ", number2)
 
 def contact():
     st.title('Welcome to this contact page')
