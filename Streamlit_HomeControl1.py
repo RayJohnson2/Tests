@@ -10,7 +10,7 @@ import streamlit as st
 
 #--- I don't understand the necessity of this line. But it is needed
 #    to preserve session_state in the cloud. Not locally.
-#st.session_state.update(st.session_state)
+st.session_state.update(st.session_state)
 
 
 # Check if the variable 'counter' exists in the session state
@@ -87,6 +87,7 @@ elif st.session_state.active_page == 'Slider':
     slider()
 elif st.session_state.active_page == 'Contact':
     contact()
+
 
 
 
