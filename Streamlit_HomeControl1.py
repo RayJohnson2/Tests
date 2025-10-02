@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 from datetime import date, time
 
 # ----------------------------
@@ -32,7 +31,7 @@ if sidebar_choice == "Overzicht":
     - Widgets (knoppen, sliders, tekstvelden, selecties, etc.)
     - Media (afbeeldingen, audio, video, iconen via emoji)
     - Dataframes en tabellen
-    - Grafieken (Streamlit charts, Plotly)
+    - Grafieken (Streamlit built-in charts)
     - Statusmeldingen en lay-out
     """)
 
@@ -60,30 +59,23 @@ elif sidebar_choice == "Formulier":
 # PAGINA: GRAFIEKEN
 # ----------------------------
 elif sidebar_choice == "Grafieken":
-    st.header("📊 Grafieken Demo")
+    st.header("📊 Grafieken Demo (zonder Plotly/Matplotlib)")
 
     # Data maken
     df = pd.DataFrame({
         "x": np.linspace(0, 10, 100),
-        "y": np.sin(np.linspace(0, 10, 100))
-    })
+        "sin(x)": np.sin(np.linspace(0, 10, 100)),
+        "cos(x)": np.cos(np.linspace(0, 10, 100))
+    }).set_index("x")
 
-    # Line chart (Streamlit)
-    st.subheader("Streamlit line_chart")
-    st.line_chart(df.set_index("x"))
+    st.subheader("Line chart")
+    st.line_chart(df)
 
-    # Area chart
-    st.subheader("Streamlit area_chart")
-    st.area_chart(df.set_index("x"))
+    st.subheader("Area chart")
+    st.area_chart(df[["sin(x)"]])
 
-    # Bar chart
-    st.subheader("Streamlit bar_chart")
-    st.bar_chart(df.head(20).set_index("x"))
-
-    # Plotly plot
-    st.subheader("Plotly grafiek")
-    fig2 = px.scatter(df, x="x", y="y", color="y", title="Plotly scatter")
-    st.plotly_chart(fig2)
+    st.subheader("Bar chart")
+    st.bar_chart(df.head(20))
 
 # ----------------------------
 # PAGINA: DATA
@@ -123,7 +115,11 @@ elif sidebar_choice == "Widgets":
     keuze = st.radio("Kies een optie:", ["🍎 Appel", "🍌 Banaan", "🍒 Kers"])
     st.write("Je koos:", keuze)
 
-    multiselect = st.multiselect("Kies je favoriete talen:", ["Python", "JavaScript", "Rust", "Go"], default=["Python"])
+    multiselect = st.multiselect(
+        "Kies je favoriete talen:", 
+        ["Python", "JavaScript", "Rust", "Go"], 
+        default=["Python"]
+    )
     st.write("Je koos:", multiselect)
 
     slider = st.slider("Kies een getal:", 0, 100, 50)
