@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import plotly.express as px
-from datetime import datetime, date, time
+from datetime import date, time
 
 # ----------------------------
 # SIDEBAR
@@ -11,7 +10,10 @@ from datetime import datetime, date, time
 st.sidebar.title("⚙️ Instellingen")
 st.sidebar.write("Hier kun je opties kiezen die invloed hebben op de app.")
 
-sidebar_choice = st.sidebar.radio("Kies een pagina:", ["Overzicht", "Formulier", "Grafieken", "Data", "Widgets"])
+sidebar_choice = st.sidebar.radio(
+    "Kies een pagina:", 
+    ["Overzicht", "Formulier", "Grafieken", "Data", "Widgets"]
+)
 show_code = st.sidebar.checkbox("Laat code zien", value=True)
 
 # ----------------------------
@@ -30,7 +32,7 @@ if sidebar_choice == "Overzicht":
     - Widgets (knoppen, sliders, tekstvelden, selecties, etc.)
     - Media (afbeeldingen, audio, video, iconen via emoji)
     - Dataframes en tabellen
-    - Grafieken (Matplotlib, Plotly, Streamlit charts)
+    - Grafieken (Streamlit charts, Plotly)
     - Statusmeldingen en lay-out
     """)
 
@@ -66,17 +68,17 @@ elif sidebar_choice == "Grafieken":
         "y": np.sin(np.linspace(0, 10, 100))
     })
 
-    # Line chart
+    # Line chart (Streamlit)
     st.subheader("Streamlit line_chart")
     st.line_chart(df.set_index("x"))
 
-    # Matplotlib plot
-    st.subheader("Matplotlib grafiek")
-    fig, ax = plt.subplots()
-    ax.plot(df["x"], df["y"], label="sin(x)")
-    ax.set_title("Matplotlib voorbeeld")
-    ax.legend()
-    st.pyplot(fig)
+    # Area chart
+    st.subheader("Streamlit area_chart")
+    st.area_chart(df.set_index("x"))
+
+    # Bar chart
+    st.subheader("Streamlit bar_chart")
+    st.bar_chart(df.head(20).set_index("x"))
 
     # Plotly plot
     st.subheader("Plotly grafiek")
@@ -136,5 +138,4 @@ elif sidebar_choice == "Widgets":
     st.image("https://placekitten.com/300/200", caption="Een kat 🐱")
     st.audio("https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav")
     st.video("https://www.w3schools.com/html/mov_bbb.mp4")
-
 
