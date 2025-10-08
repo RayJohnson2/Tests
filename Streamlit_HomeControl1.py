@@ -5,7 +5,7 @@ from datetime import date, time
 
 # streamlit run Streamlit_HomeControl1.py
 
-st.title("_Eddy's_ Home Control :house:")
+st.header("_Eddy's_ Home Control :house:")
 st.subheader("Selecteer het weertype :sunglasses:")
 options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
 selection = st.pills("Weertype", options, selection_mode="single")
@@ -17,3 +17,4 @@ selection = st.segmented_control(
 )
 st.markdown(f"Your selected options: {selection}.")
 st.divider()  # 👈 Draws a horizontal rule
+
