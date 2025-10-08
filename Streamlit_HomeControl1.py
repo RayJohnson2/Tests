@@ -19,41 +19,39 @@ options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
 selection = st.segmented_control(
     "Weertype", options, selection_mode="single"
 )
-st.markdown(f"Your selected options: {selection}.")
+# st.markdown(f"Your selected options: {selection}.")
 
 
-# De opties die u normaal in st.pills zou gebruiken
-keuze_opties = ["🚗 Auto", "🚀 Vliegtuig", "🚂 Trein", "🚲 Fiets"]
-
-# Gebruik st.radio voor de verticale lay-out
-# De 'index' stelt de standaard geselecteerde optie in.
-gekozen_optie = st.radio(
-    "Kies uw vervoersmiddel:",
-    options=keuze_opties,
-    index=0,  # Standaard is 'Auto'
-    key='vervoer_keuze'
-)
-
-st.info(f"U heeft gekozen voor: **{gekozen_optie}**")
+# # De opties die u normaal in st.pills zou gebruiken
+# keuze_opties = ["🚗 Auto", "🚀 Vliegtuig", "🚂 Trein", "🚲 Fiets"]
+# 
+# # Gebruik st.radio voor de verticale lay-out
+# # De 'index' stelt de standaard geselecteerde optie in.
+# gekozen_optie = st.radio(
+#     "Kies uw vervoersmiddel:",
+#     options=keuze_opties,
+#     index=0,  # Standaard is 'Auto'
+#     key='vervoer_keuze'
+# )
+# st.info(f"U heeft gekozen voor: **{gekozen_optie}**")
 
 
 
 selected = option_menu(
-    "Maak een keuze",
-    ["Optie 1", "Optie 2", "Optie 3"],
-    orientation="vertical",  # maakt ze verticaal
+    "Navigatie",
+    ["Home", "Instellingen", "Over"],
+    icons=["house", "gear", "info-circle"],  # Bootstrap icons
+    orientation="vertical",
     styles={
-        "container": {"padding": "10px"},
         "nav-link": {
             "font-size": "16px",
             "border-radius": "10px",
-            "text-align": "left",
             "margin-bottom": "5px",
         },
         "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
     }
 )
 
-st.write("Geselecteerd:", selected)
+st.write("Geselecteerde optie:", selected)
 
 st.divider()  # 👈 Draws a horizontal rule
