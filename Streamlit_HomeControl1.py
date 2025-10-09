@@ -10,16 +10,24 @@ from streamlit_option_menu import option_menu
 
 st.session_state.update(st.session_state)
 
+if 'start_function' not in st.session_state:
+    st.write('start_function not in st.session_state')
+    # If not, initialize it (this happens only on the very first load)
+    st.session_state['start_function'] = 1
+    
 #st.title ("_Eddy's_ Home Control :house:")
 # st.header("_Eddy's_ Home Control :house:")
 
-# @st.fragment(run_every="5s")
-@st.cache_data(ttl=5)  # ververs cache elke x seconden
+@st.fragment(run_every="5s")
+# @st.cache_data(ttl=5)  # ververs cache elke x seconden
 def mijn_langzame_functie():
 #     st.write("Functie wordt uitgevoerd...")
+    if st.session_state['start_function'] == 0:
+        return
     # Je langdurige code hier
     time.sleep(2)  # simulatie
     st.write(f"Laatste update: {time.strftime('%H:%M:%S')}")
+    return
 
 # mijn_langzame_functie()
 
@@ -35,12 +43,18 @@ options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
 selection = st.pills("Selecteer het weertype :sunglasses:", options, selection_mode="single")
 st.markdown(f"Het is vandaag: {selection}.")
 
-options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
+options = ["Start", "⛅️ Wisselvallig", "Stop"]
 selection = st.segmented_control(
-    "Selecteer het weertype :sunglasses:", options, selection_mode="single"
+    "Start of stop functie:sunglasses:", options, selection_mode="single"
 )
 # st.markdown(f"Your selected options: {selection}.")
-
+if selection == "Start":
+    st.session_state['start_function'] = 1
+if selection == "Stop":
+    st.session_state['start_function'] = 0
+    
+    
+    
 
 # # De opties die u normaal in st.pills zou gebruiken
 # keuze_opties = ["🚗 Auto", "🚀 Vliegtuig", "🚂 Trein", "🚲 Fiets"]
