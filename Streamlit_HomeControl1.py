@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from streamlit_option_menu import option_menu
 
 # import pandas as pd
@@ -7,17 +8,36 @@ from streamlit_option_menu import option_menu
 
 # streamlit run Streamlit_HomeControl1.py
 
-#st.title ("_Eddy's_ Home Control :house:")
-st.header("_Eddy's_ Home Control :house:")
+st.session_state.update(st.session_state)
 
-st.subheader("Selecteer het weertype :sunglasses:")
+#st.title ("_Eddy's_ Home Control :house:")
+# st.header("_Eddy's_ Home Control :house:")
+
+# @st.fragment(run_every="5s")
+@st.cache_data(ttl=5)  # ververs cache elke x seconden
+def mijn_langzame_functie():
+#     st.write("Functie wordt uitgevoerd...")
+    # Je langdurige code hier
+    time.sleep(2)  # simulatie
+    st.write(f"Laatste update: {time.strftime('%H:%M:%S')}")
+
+# mijn_langzame_functie()
+
+# # Check if the variable 'counter' exists in the session state
+# if 'start_function' not in st.session_state:
+#     st.write('start_function not in st.session_state')
+#     # If not, initialize it (this happens only on the very first load)
+#     st.session_state['start_function'] = 1
+#     mijn_langzame_functie()
+    
+# st.subheader("Selecteer het weertype :sunglasses:")
 options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
-selection = st.pills("Weertype", options, selection_mode="single")
+selection = st.pills("Selecteer het weertype :sunglasses:", options, selection_mode="single")
 st.markdown(f"Het is vandaag: {selection}.")
 
 options = ["🌞Zonnig", "⛅️ Wisselvallig", "☔️Bewolkt"]
 selection = st.segmented_control(
-    "Weertype", options, selection_mode="single"
+    "Selecteer het weertype :sunglasses:", options, selection_mode="single"
 )
 # st.markdown(f"Your selected options: {selection}.")
 
@@ -38,7 +58,7 @@ selection = st.segmented_control(
 
 
 selected = option_menu(
-    "Navigatie",
+    "Batterij mode",
     ["Home", "Instellingen", "Over"],
     icons=["house", "gear", "info-circle"],  # Bootstrap icons
     orientation="vertical",
@@ -54,4 +74,7 @@ selected = option_menu(
 
 st.write("Geselecteerde optie:", selected)
 
-st.divider()  # 👈 Draws a horizontal rule
+# st.divider()  # 👈 Draws a horizontal rule
+
+mijn_langzame_functie()
+
