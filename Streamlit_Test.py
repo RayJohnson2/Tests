@@ -89,7 +89,7 @@ def radios_fragment():  #<-- This code is automatically run every RUN_EVERY seco
         st.session_state.User_Action = False
         st.write('st.session_state:',st.session_state["group1_radio"],st.session_state["group2_radio"])
         st.write('do something here that takes some time',st.session_state.cntr)
-        time.sleep(5)
+
 #         st.session_state["group1_radio"] = "opt1"  #<-- test
 
         shared["group1"] = st.session_state["group1_radio"]
@@ -98,7 +98,7 @@ def radios_fragment():  #<-- This code is automatically run every RUN_EVERY seco
         shared["last_update"] = time.time()
         # Deze client zag nu de nieuwste update (eigen wijziging)
         st.session_state["last_seen_shared_update"] = shared["last_update"]
-        
+        time.sleep(5)        
 
 #==============================================
         
@@ -112,5 +112,6 @@ else:
     st.info(f"Laatste wijziging {int(delta)} sec geleden")
 
 # st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
+
 
 
