@@ -7,10 +7,13 @@ import time
 import requests
 import json
 
+
+# D:\Eddy\PythonProgs\Streamlit.streamlit\secrets.toml
+# D:\Eddy\PythonProgs\Streamlit.streamlit\secrets.toml
 #=====================================================================
 #--- Program constants
-GITHUB_TOKEN            = 'abc'
-GITHUB_GIST_DESCRIPTION = 'Eddys Home Control - from UI'
+# GITHUB_TOKEN            = '-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'
+# GITHUB_GIST_DESCRIPTION = 'Eddys Home Control - from UI'
 GITHUB_GIST_FILENAME    = "JSON"
 
     # TTL / polling interval in seconden
@@ -20,6 +23,10 @@ RV_SUCCESS = 0
 RV_ERROR   = 1
 
 
+GITHUB_TOKEN            = st.secrets["GITHUB_TOKEN"]
+GITHUB_GIST_DESCRIPTION = st.secrets["GITHUB_GIST_DESCRIPTION"]
+st.write(st.secrets["GITHUB_TOKEN"])
+st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
 
 #=====================================================================
 # Create a Github gist with JSON data.
@@ -104,6 +111,7 @@ def Github_Get_GistID(github_token, description):
 
     # Alle gists van de gebruiker ophalen (inclusief private)
     page = 1
+    Found = 0
     matches = []
 
     while True:
@@ -235,6 +243,7 @@ def Init_Data():
     st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]   #0.0
     st.session_state.cntr = 0
     
+    st.session_state["gist_id"] = ''
     Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
     if Found == 0:
         # Gist not found. Create it.
@@ -249,6 +258,9 @@ def Init_Data():
             st.session_state["gist_id"] = gist_id
             st.write("gist_id: ", gist_id)
             st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
+        else:
+            st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
+            
     else:
         # Gist found
         st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
@@ -343,6 +355,8 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
 #         print(f'============\n{resultaat['html_url']}')
         if RetVal == RV_SUCCESS:
             st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
+        else:           
+            st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")
             
 #         time.sleep(5)        
 
@@ -385,6 +399,5 @@ Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 #     st.info(f"Laatste wijziging {int(delta)} sec geleden")
 
 # st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
-
 
 
