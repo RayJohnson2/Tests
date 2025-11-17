@@ -12,8 +12,6 @@ import json
 # D:\Eddy\PythonProgs\Streamlit.streamlit\secrets.toml
 #=====================================================================
 #--- Program constants
-# GITHUB_TOKEN            = '-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'
-# GITHUB_GIST_DESCRIPTION = 'Eddys Home Control - from UI'
 GITHUB_GIST_FILENAME    = "JSON"
 
     # TTL / polling interval in seconden
@@ -25,8 +23,8 @@ RV_ERROR   = 1
 
 GITHUB_TOKEN            = st.secrets["GITHUB_TOKEN"]
 GITHUB_GIST_DESCRIPTION = st.secrets["GITHUB_GIST_DESCRIPTION"]
-st.write(st.secrets["GITHUB_TOKEN"])
-st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
+#st.write(st.secrets["GITHUB_TOKEN"])
+#st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
 
 #=====================================================================
 # Create a Github gist with JSON data.
@@ -399,5 +397,6 @@ Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 #     st.info(f"Laatste wijziging {int(delta)} sec geleden")
 
 # st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
+
 
 
