@@ -9,7 +9,7 @@ import json
 
 #=====================================================================
 #--- Program constants
-GITHUB_TOKEN            = ''
+GITHUB_TOKEN            = 'abc'
 GITHUB_GIST_DESCRIPTION = 'Eddys Home Control - from UI'
 GITHUB_GIST_FILENAME    = "JSON"
 
@@ -385,5 +385,6 @@ Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 #     st.info(f"Laatste wijziging {int(delta)} sec geleden")
 
 # st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
+
 
 
