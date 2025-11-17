@@ -254,7 +254,7 @@ def Init_Data():
         if RetVal == RV_SUCCESS:
             # Gist created succesfully
             st.session_state["gist_id"] = gist_id
-            st.write("gist_id: ", gist_id)
+            #st.write("gist_id: ", gist_id)
             st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
         else:
             st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
@@ -262,10 +262,10 @@ def Init_Data():
     else:
         # Gist found
         st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
-        st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
+        #st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
         st.session_state["gist_id"] = gists_found[0]['id']   
     
-    st.write("gist_id: ", st.session_state["gist_id"])
+    #st.write("gist_id: ", st.session_state["gist_id"])
     return
 #=====================================================================
 
@@ -397,6 +397,7 @@ Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 #     st.info(f"Laatste wijziging {int(delta)} sec geleden")
 
 # st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
+
 
 
 
