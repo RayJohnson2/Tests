@@ -235,14 +235,13 @@ def Github_UpdateGist_Text(github_token, gist_id, bestandsnaam, data):
 #     Alle data moet in st.session_state bewaard worden. Alle andere
 #     data word gereset (gewist!) bij elke user-actie.
 def Page1_Init_Data():
-    # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
+    # st.session_state : Initialiseer deze met de data uit de 'shared' data.
     # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
     st.session_state["group1"] = shared["group1"]
     st.session_state["group2"] = shared["group2"]
     
     # Houd bij welke versie van shared deze client laatst heeft gezien    
-    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]   #0.0
-#     st.session_state.cntr = 0
+    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
     
     st.session_state.User_Action = False
     st.session_state["gist_id"] = ''
@@ -413,8 +412,8 @@ def Page2_Init_Data():
 
     
    
-#     st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]   #0.0
-
+    # Houd bij welke versie van shared deze client laatst heeft gezien    
+    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
     
     st.session_state.User_Action = False
     return
@@ -426,20 +425,88 @@ def Page2_Init_Data():
 
 def Number1_changed():
     st.write('number changed ', time.time())
-    shared["number_input1"] = st.session_state["number_input1"]
+#     shared["number_input1"] = st.session_state["number_input1"]
+    st.session_state.User_Action = True
     return
 
-def page_2():
-    st.title("Page 2")
-    Page2_Init_Data()
+
+
+
+#=====================================================================
+@st.fragment(run_every=RUN_EVERY)
+def Page2_fragment():  #<-- This code is automatically run every RUN_EVERY seconds
+     
+    # --- Zorg dat widget states up to date zijn!!!
+    # Indien er nieuwere shared data zijn (gewijzigd door een andere user),
+    # sync deze naar deze session_state zodat de widgets zich aanpassen.
+    # Dit overschrijft de widgets alleen wanneer er echt een *nieuwere* externe wijziging is.
+    if shared["time_data_last_updated"] > st.session_state["time_data_last_seen"]:
+        # Kopieer shared waarden naar deze sessie (zodat widgets de externe wijziging tonen)
+        st.session_state["number_input1"] = shared["number_input1"]
+        st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
+
+    # --- Render widgets (koppelen aan session_state keys) ---
+    # De widgets tonen de state, zoals opgeslagen in st.session_state (st.session_state["group1"]....)
     number = st.number_input("Insert a number",
                              step=0.5,
-                             on_change = Number1_changed,
+                             on_change = User_Action_Register,
                              key="number_input1",)
     
-    st.write(st.session_state)
-    st.write(shared)
+
     
+    if st.session_state.User_Action == True:
+        st.write('Process User Action:',st.session_state.User_Action)  
+        Page2_User_Action_Process()
+    else:
+        st.write('No User Action to process',st.session_state.User_Action)  
+    return            
+#=====================================================================
+
+
+#=====================================================================
+def Page2_Settings():
+    # --- Page2_Settings
+
+    Page2_Init_Data()
+    
+    # Title of the Page 
+    st.title("🔁 Settings")
+     
+    # Start continuous loop        
+    Page2_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
+
+    st.write('End of code') 
+#     st.toast('End of code', icon=":material/disc_full:", duration="long")
+    st.write(shared)
+    return
+#=====================================================================
+
+
+#=====================================================================
+def Page2_User_Action_Process():
+    # Process the user action
+    st.session_state.User_Action = False  # This user action is (being) processed
+    
+#     st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
+
+    # Store the widget states in the shared data (for all users to see)
+    shared["number_input1"] = st.session_state["number_input1"]
+   
+   
+    shared["time_data_last_updated"] = time.time()
+    # Deze client zag nu de nieuwste update (eigen wijziging)
+    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
+    
+    # Store changed data in Github Gist
+    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, st.session_state["gist_id"], GITHUB_GIST_FILENAME, shared)
+
+    if RetVal == RV_SUCCESS:
+        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
+    else:           
+        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
+    return
+#=====================================================================
+
     
 #=====================================================================
 #--- Main program
@@ -449,14 +516,14 @@ def here():
 # App caption in browser
 st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
 
-Modes_page = st.Page(Page1_Modes, title="Modes", icon=":material/logout:")
+Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/logout:")
+Settings_page = st.Page(Page2_Settings, title="Settings", icon=":material/logout:")
 
 shared = Get_Shared_State()
 
-pg = st.navigation([Modes_page, page_2])
+pg = st.navigation([Modes_page, Settings_page])
 # pg = st.navigation([Page1_Modes, page_2])
 
 pg.run()
-
 
 
