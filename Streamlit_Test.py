@@ -286,9 +286,10 @@ def Get_Shared_State():
     # Het is de bedoeling dat, als 1 user iets wijzigt, dat de andere users deze wijziging zo snel
     # mogelijk te zijn krijgen op hun user interface.
     return {
-        "group1": "opt1",
-        "group2": "red",
-        "time_data_last_updated": time.time(),
+        "group1"       : "opt1",
+        "group2"       : "red",
+        "number_input1": 45.0,
+        "time_data_last_updated": time.time()
     }
 #=====================================================================
 
@@ -456,5 +457,6 @@ pg = st.navigation([Modes_page, page_2])
 # pg = st.navigation([Page1_Modes, page_2])
 
 pg.run()
+
 
 
