@@ -1,6 +1,8 @@
 
-# streamlit run Streamlit_Test2.py
+# streamlit run Streamlit_Test3.py
 
+# Werkt goed. 2 Pages.
+# Nog te doen: bij Init: data uit Gist downloaden
 
 import streamlit as st
 import time
@@ -8,8 +10,7 @@ import requests
 import json
 
 
-# D:\Eddy\PythonProgs\Streamlit.streamlit\secrets.toml
-# D:\Eddy\PythonProgs\Streamlit.streamlit\secrets.toml
+
 #=====================================================================
 #--- Program constants
 GITHUB_GIST_FILENAME    = "JSON"
@@ -21,10 +22,12 @@ RV_SUCCESS = 0
 RV_ERROR   = 1
 
 
+# Secrets stored in:
+# D:\Eddy\PythonProgs\Streamlit\.streamlit\secrets.toml
 GITHUB_TOKEN            = st.secrets["GITHUB_TOKEN"]
 GITHUB_GIST_DESCRIPTION = st.secrets["GITHUB_GIST_DESCRIPTION"]
-#st.write(st.secrets["GITHUB_TOKEN"])
-#st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
+# st.write(st.secrets["GITHUB_TOKEN"])
+# st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
 
 #=====================================================================
 # Create a Github gist with JSON data.
@@ -231,7 +234,7 @@ def Github_UpdateGist_Text(github_token, gist_id, bestandsnaam, data):
 # --- initialiseer de data slechts 1x per sessie ---
 #     Alle data moet in st.session_state bewaard worden. Alle andere
 #     data word gereset (gewist!) bij elke user-actie.
-def Init_Data():
+def Page1_Init_Data():
     # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
     # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
     st.session_state["group1"] = shared["group1"]
@@ -239,8 +242,9 @@ def Init_Data():
     
     # Houd bij welke versie van shared deze client laatst heeft gezien    
     st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]   #0.0
-    st.session_state.cntr = 0
+#     st.session_state.cntr = 0
     
+    st.session_state.User_Action = False
     st.session_state["gist_id"] = ''
     Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
     if Found == 0:
@@ -254,7 +258,7 @@ def Init_Data():
         if RetVal == RV_SUCCESS:
             # Gist created succesfully
             st.session_state["gist_id"] = gist_id
-            #st.write("gist_id: ", gist_id)
+#             st.write("gist_id: ", gist_id)
             st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
         else:
             st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
@@ -262,10 +266,10 @@ def Init_Data():
     else:
         # Gist found
         st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
-        #st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
+#         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
         st.session_state["gist_id"] = gists_found[0]['id']   
     
-    #st.write("gist_id: ", st.session_state["gist_id"])
+#     st.write("gist_id: ", st.session_state["gist_id"])
     return
 #=====================================================================
 
@@ -291,12 +295,37 @@ def Get_Shared_State():
 
    
 
+#=====================================================================
+def Page1_User_Action_Process():
+    # Process the user action
+    st.session_state.User_Action = False  # This user action is (being) processed
+    
+    st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
+
+    # Store the widget states in the shared data (for all users to see)
+    shared["group1"] = st.session_state["group1"]
+    shared["group2"] = st.session_state["group2"]
+    
+    shared["time_data_last_updated"] = time.time()
+    # Deze client zag nu de nieuwste update (eigen wijziging)
+    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
+    
+    # Store changed data in Github Gist
+    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, st.session_state["gist_id"], GITHUB_GIST_FILENAME, shared)
+
+    if RetVal == RV_SUCCESS:
+        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
+    else:           
+        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
+    return
+#=====================================================================
 
 
 #=====================================================================
 def User_Action_Register():
+    # Register that there was a user action
     st.session_state.User_Action = True
-    st.session_state.cntr += 1
+#     st.session_state.cntr += 1
     return
 #=====================================================================
 
@@ -330,37 +359,87 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
         on_change = User_Action_Register,        
     )
 
-
-    st.write('st.session_state.User_Action:',st.session_state.User_Action)
+    
     if st.session_state.User_Action == True:
-            
-        st.session_state.User_Action = False
-        st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
-#         st.write('do something here that takes some time',st.session_state.cntr)
-
-#         st.session_state["group1"] = "opt1"  #<-- test
-
-        shared["group1"] = st.session_state["group1"]
-        shared["group2"] = st.session_state["group2"]
-        
-        shared["time_data_last_updated"] = time.time()
-        # Deze client zag nu de nieuwste update (eigen wijziging)
-        st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-        
-        # Store changed data in Github Gist
-        RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, st.session_state["gist_id"], GITHUB_GIST_FILENAME, shared)
-#         print(f'===RetVal===\n{RetVal}')
-#         print(f'============\n{resultaat['html_url']}')
-        if RetVal == RV_SUCCESS:
-            st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
-        else:           
-            st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")
-            
-#         time.sleep(5)        
-
+        st.write('Process User Action:',st.session_state.User_Action)  
+        Page1_User_Action_Process()
+    else:
+        st.write('No User Action to process',st.session_state.User_Action)  
+    return            
 #=====================================================================
 
 
+
+#=====================================================================
+def Page1_Modes():
+    # --- Page1 Modes
+
+    # Create shared data dictionary (data is shared among all users/open sessions!!)
+#     shared = Get_Shared_State()
+
+    # --- initialiseer de data slechts 1x per sessie ---
+    #     Alle data moet in st.session_state bewaard worden. Alle andere
+    #     data word gereset bij elke user-actie.
+#     if "time_data_last_seen" not in st.session_state:
+#         # st.session_state is empty. Init it.
+#         Page1_Init_Data()
+#     else:
+#         st.toast("st.session_state already initialised", duration="short")
+#         st.write(st.session_state)
+    Page1_Init_Data()
+    
+    # Title of the Page 
+    st.title("🔁 Modes")
+     
+    # Start continuous loop        
+    Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
+
+    st.write('End of code') 
+#     st.toast('End of code', icon=":material/disc_full:", duration="long")
+    st.write(shared)
+    return
+#=====================================================================
+
+
+#=====================================================================
+# --- initialiseer de data slechts 1x per sessie ---
+#     Alle data moet in st.session_state bewaard worden. Alle andere
+#     data word gereset (gewist!) bij elke user-actie.
+def Page2_Init_Data():
+    # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
+    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
+    st.session_state["number_input1"] = shared["number_input1"]
+
+    
+   
+#     st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]   #0.0
+
+    
+    st.session_state.User_Action = False
+    return
+#=====================================================================
+
+
+
+
+
+def Number1_changed():
+    st.write('number changed ', time.time())
+    shared["number_input1"] = st.session_state["number_input1"]
+    return
+
+def page_2():
+    st.title("Page 2")
+    Page2_Init_Data()
+    number = st.number_input("Insert a number",
+                             step=0.5,
+                             on_change = Number1_changed,
+                             key="number_input1",)
+    
+    st.write(st.session_state)
+    st.write(shared)
+    
+    
 #=====================================================================
 #--- Main program
 def here():
@@ -369,35 +448,13 @@ def here():
 # App caption in browser
 st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
 
-# Create shared data dictionary (data is shared among all users/open sessions!!)
+Modes_page = st.Page(Page1_Modes, title="Modes", icon=":material/logout:")
+
 shared = Get_Shared_State()
 
-st.session_state.User_Action = 0
+pg = st.navigation([Modes_page, page_2])
+# pg = st.navigation([Page1_Modes, page_2])
 
-
-# --- initialiseer de data slechts 1x per sessie ---
-#     Alle data moet in st.session_state bewaard worden. Alle andere
-#     data word gereset bij elke user-actie.
-if "time_data_last_seen" not in st.session_state:
-    # st.session_state is empty. Init it.
-    Init_Data()
-        
-# Title on the 
-st.title("🔁 Gedeelde radiobuttons")
- 
-
-# Start continuous loop        
-Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
-
-# # --- indicator / info buiten fragment ---
-# delta = time.time() - shared["time_data_last_updated"]
-# if delta < 4:
-#     st.success("✅ Onlangs bijgewerkt door (andere) gebruiker")
-# else:
-#     st.info(f"Laatste wijziging {int(delta)} sec geleden")
-
-# st.caption(f"Fragment herlaadt elke {RUN_EVERY} seconden (run_every). "
-
-
+pg.run()
 
 
