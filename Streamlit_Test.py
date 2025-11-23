@@ -229,50 +229,6 @@ def Github_UpdateGist_Text(github_token, gist_id, bestandsnaam, data):
     return RetVal, gist_json    
 #=====================================================================
 
-
-#=====================================================================
-# --- initialiseer de data slechts 1x per sessie ---
-#     Alle data moet in st.session_state bewaard worden. Alle andere
-#     data word gereset (gewist!) bij elke user-actie.
-def Page1_Init_Data():
-    # st.session_state : Initialiseer deze met de data uit de 'shared' data.
-    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
-    st.session_state["group1"] = shared["group1"]
-    st.session_state["group2"] = shared["group2"]
-    
-    # Houd bij welke versie van shared deze client laatst heeft gezien    
-    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
-    
-    st.session_state.User_Action = False
-    st.session_state["gist_id"] = ''
-    Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
-    if Found == 0:
-        # Gist not found. Create it.
-        st.toast("Gist not found. Trying to create it", icon=":material/warning:", duration="short")
-        
-        # Store the data of 'shared' dictionary in it.
-        GITHUB_GIST_FILENAME    = "JSON"
-        public      = False    # Secret Gist
-        RetVal, gist_id = Github_CreateGist_JSON(GITHUB_TOKEN, shared, GITHUB_GIST_DESCRIPTION, GITHUB_GIST_FILENAME, public)
-        if RetVal == RV_SUCCESS:
-            # Gist created succesfully
-            st.session_state["gist_id"] = gist_id
-#             st.write("gist_id: ", gist_id)
-            st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
-        else:
-            st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
-            
-    else:
-        # Gist found
-        st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
-#         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
-        st.session_state["gist_id"] = gists_found[0]['id']   
-    
-#     st.write("gist_id: ", st.session_state["gist_id"])
-    return
-#=====================================================================
-
-
 #=====================================================================
 # --- Gedeelde data ---
 #     Deze data wordt gedeeld over alle verschillende open user-sessies. In verschillende browsers!
@@ -293,30 +249,44 @@ def Get_Shared_State():
 #=====================================================================
 
 
-   
-
 #=====================================================================
-def Page1_User_Action_Process():
-    # Process the user action
-    st.session_state.User_Action = False  # This user action is (being) processed
-    
-    st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
+# --- Get Gist ID where the user data is stored
+def Init_Get_Gist_ID():
 
-    # Store the widget states in the shared data (for all users to see)
-    shared["group1"] = st.session_state["group1"]
-    shared["group2"] = st.session_state["group2"]
-    
-    shared["time_data_last_updated"] = time.time()
-    # Deze client zag nu de nieuwste update (eigen wijziging)
-    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-    
-    # Store changed data in Github Gist
-    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, st.session_state["gist_id"], GITHUB_GIST_FILENAME, shared)
+#     st.write('Init_Get_Gist_ID.................')
 
-    if RetVal == RV_SUCCESS:
-        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
-    else:           
-        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
+    if "gist_id" not in shared:
+#         shared["gist_id"] = ''
+        pass
+    else:
+        # Assume current Gist ID is still valid
+        st.write('Gist_ID defined')
+        return
+    
+    Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
+    if Found == 0:
+        # Gist not found. Create it.
+        st.toast("Gist not found. Trying to create it", icon=":material/warning:", duration="short")
+        
+        # Store the data of 'shared' dictionary in it.
+        GITHUB_GIST_FILENAME    = "JSON"
+        public      = False    # Secret Gist
+        RetVal, gist_id = Github_CreateGist_JSON(GITHUB_TOKEN, shared, GITHUB_GIST_DESCRIPTION, GITHUB_GIST_FILENAME, public)
+        if RetVal == RV_SUCCESS:
+            # Gist created succesfully
+            shared["gist_id"] = gist_id
+#             st.write("gist_id: ", gist_id)
+            st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
+        else:
+            st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
+            
+    else:
+        # Gist found
+        st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
+#         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
+        shared["gist_id"] = gists_found[0]['id']   
+    
+    st.write("gist_id: ", shared["gist_id"])
     return
 #=====================================================================
 
@@ -328,6 +298,7 @@ def User_Action_Register():
 #     st.session_state.cntr += 1
     return
 #=====================================================================
+
 
 #=====================================================================
 @st.fragment(run_every=RUN_EVERY)
@@ -371,6 +342,50 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
 
 
 #=====================================================================
+# --- initialiseer de data slechts 1x per sessie ---
+#     Alle data moet in st.session_state bewaard worden. Alle andere
+#     data word gereset (gewist!) bij elke user-actie.
+def Page1_Init_Data():
+    # st.session_state : Initialiseer deze met de data uit de 'shared' data.
+    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
+    st.session_state["group1"] = shared["group1"]
+    st.session_state["group2"] = shared["group2"]
+    
+    # Houd bij welke versie van shared deze client laatst heeft gezien    
+    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
+    
+    st.session_state.User_Action = False
+#     st.session_state["gist_id"] = ''
+#     Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
+#     if Found == 0:
+#         # Gist not found. Create it.
+#         st.toast("Gist not found. Trying to create it", icon=":material/warning:", duration="short")
+#         
+#         # Store the data of 'shared' dictionary in it.
+#         GITHUB_GIST_FILENAME    = "JSON"
+#         public      = False    # Secret Gist
+#         RetVal, gist_id = Github_CreateGist_JSON(GITHUB_TOKEN, shared, GITHUB_GIST_DESCRIPTION, GITHUB_GIST_FILENAME, public)
+#         if RetVal == RV_SUCCESS:
+#             # Gist created succesfully
+#             st.session_state["gist_id"] = gist_id
+# #             st.write("gist_id: ", gist_id)
+#             st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
+#         else:
+#             st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
+#             
+#     else:
+#         # Gist found
+#         st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
+# #         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
+#         st.session_state["gist_id"] = gists_found[0]['id']   
+#     
+# #     st.write("gist_id: ", st.session_state["gist_id"])
+    return
+#=====================================================================
+
+
+
+#=====================================================================
 def Page1_Modes():
     # --- Page1 Modes
 
@@ -402,34 +417,29 @@ def Page1_Modes():
 
 
 #=====================================================================
-# --- initialiseer de data slechts 1x per sessie ---
-#     Alle data moet in st.session_state bewaard worden. Alle andere
-#     data word gereset (gewist!) bij elke user-actie.
-def Page2_Init_Data():
-    # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
-    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
-    st.session_state["number_input1"] = shared["number_input1"]
+def Page1_User_Action_Process():
+    # Process the user action
+    st.session_state.User_Action = False  # This user action is (being) processed
+    
+    st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
 
+    # Store the widget states in the shared data (for all users to see)
+    shared["group1"] = st.session_state["group1"]
+    shared["group2"] = st.session_state["group2"]
     
-   
-    # Houd bij welke versie van shared deze client laatst heeft gezien    
-    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
+    shared["time_data_last_updated"] = time.time()
+    # Deze client zag nu de nieuwste update (eigen wijziging)
+    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
     
-    st.session_state.User_Action = False
+    # Store changed data in Github Gist
+    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, shared["gist_id"], GITHUB_GIST_FILENAME, shared)
+
+    if RetVal == RV_SUCCESS:
+        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
+    else:           
+        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
     return
 #=====================================================================
-
-
-
-
-
-def Number1_changed():
-    st.write('number changed ', time.time())
-#     shared["number_input1"] = st.session_state["number_input1"]
-    st.session_state.User_Action = True
-    return
-
-
 
 
 #=====================================================================
@@ -451,9 +461,7 @@ def Page2_fragment():  #<-- This code is automatically run every RUN_EVERY secon
                              step=0.5,
                              on_change = User_Action_Register,
                              key="number_input1",)
-    
-
-    
+       
     if st.session_state.User_Action == True:
         st.write('Process User Action:',st.session_state.User_Action)  
         Page2_User_Action_Process()
@@ -461,6 +469,25 @@ def Page2_fragment():  #<-- This code is automatically run every RUN_EVERY secon
         st.write('No User Action to process',st.session_state.User_Action)  
     return            
 #=====================================================================
+
+
+#=====================================================================
+# --- initialiseer de data slechts 1x per sessie ---
+#     Alle data moet in st.session_state bewaard worden. Alle andere
+#     data word gereset (gewist!) bij elke user-actie.
+def Page2_Init_Data():
+    # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
+    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
+    st.session_state["number_input1"] = shared["number_input1"]
+
+    # Houd bij welke versie van shared deze client laatst heeft gezien    
+    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
+    
+    st.session_state.User_Action = False
+    return
+#=====================================================================
+
+
 
 
 #=====================================================================
@@ -498,7 +525,7 @@ def Page2_User_Action_Process():
     st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
     
     # Store changed data in Github Gist
-    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, st.session_state["gist_id"], GITHUB_GIST_FILENAME, shared)
+    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, shared["gist_id"], GITHUB_GIST_FILENAME, shared)
 
     if RetVal == RV_SUCCESS:
         st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
@@ -516,10 +543,11 @@ def here():
 # App caption in browser
 st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
 
+shared = Get_Shared_State()
+Init_Get_Gist_ID()    # Get Gist ID
+
 Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/logout:")
 Settings_page = st.Page(Page2_Settings, title="Settings", icon=":material/logout:")
-
-shared = Get_Shared_State()
 
 pg = st.navigation([Modes_page, Settings_page])
 # pg = st.navigation([Page1_Modes, page_2])
