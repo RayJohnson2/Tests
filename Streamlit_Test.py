@@ -332,10 +332,11 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
 
     
     if st.session_state.User_Action == True:
-        st.write('Process User Action:',st.session_state.User_Action)  
+#         st.write('Process User Action:',st.session_state.User_Action)  
         Page1_User_Action_Process()
     else:
-        st.write('No User Action to process',st.session_state.User_Action)  
+#         st.write('No User Action to process',st.session_state.User_Action)
+        pass
     return            
 #=====================================================================
 
@@ -404,7 +405,7 @@ def Page1_Modes():
     Page1_Init_Data()
     
     # Title of the Page 
-    st.title("🔁 Modes")
+    st.title("🏚️ Modes")
      
     # Start continuous loop        
     Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
@@ -463,10 +464,11 @@ def Page2_fragment():  #<-- This code is automatically run every RUN_EVERY secon
                              key="number_input1",)
        
     if st.session_state.User_Action == True:
-        st.write('Process User Action:',st.session_state.User_Action)  
+#         st.write('Process User Action:',st.session_state.User_Action)  
         Page2_User_Action_Process()
     else:
-        st.write('No User Action to process',st.session_state.User_Action)  
+#         st.write('No User Action to process',st.session_state.User_Action)
+        pass
     return            
 #=====================================================================
 
@@ -497,7 +499,7 @@ def Page2_Settings():
     Page2_Init_Data()
     
     # Title of the Page 
-    st.title("🔁 Settings")
+    st.title("⚙️ Settings")
      
     # Start continuous loop        
     Page2_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
@@ -546,8 +548,8 @@ st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
 shared = Get_Shared_State()
 Init_Get_Gist_ID()    # Get Gist ID
 
-Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/logout:")
-Settings_page = st.Page(Page2_Settings, title="Settings", icon=":material/logout:")
+Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/wifi_home:")
+Settings_page = st.Page(Page2_Settings, title="Settings", icon=":material/settings:")
 
 pg = st.navigation([Modes_page, Settings_page])
 # pg = st.navigation([Page1_Modes, page_2])
