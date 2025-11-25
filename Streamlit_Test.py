@@ -13,11 +13,10 @@ import json
 
 #=====================================================================
 #--- Program constants
-
 GITHUB_GIST_FILENAME    = "JSON"
 
     # TTL / polling interval in seconden
-RUN_EVERY = 2  # lager = snellere sync, maar meer requests
+RUN_EVERY = 4  # lager = snellere sync, maar meer requests
 
 RV_SUCCESS = 0
 RV_ERROR   = 1
@@ -364,7 +363,11 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
     # Indien er nieuwere shared data zijn (gewijzigd door een andere user),
     # sync deze naar deze session_state zodat de widgets zich aanpassen.
     # Dit overschrijft de widgets alleen wanneer er echt een *nieuwere* externe wijziging is.
-    if shared["time_data_last_updated"] > st.session_state["time_data_last_seen"]:
+#     if shared["time_data_last_updated"] == st.session_state["time_data_last_seen"]:
+#         # Nothing changed, so nothing to do
+#         return
+    
+    if shared["time_data_last_updated"] > st.session_state["time_data_last_seen"]:       
         # Kopieer shared waarden naar deze sessie (zodat widgets de externe wijziging tonen)
         st.session_state["group1"] = shared["group1"]
         st.session_state["group2"] = shared["group2"]
@@ -458,15 +461,17 @@ def Page1_Modes():
 #     else:
 #         st.toast("st.session_state already initialised", duration="short")
 #         st.write(st.session_state)
+    st.session_state.cntr = 0
     Page1_Init_Data()
     
     # Title of the Page 
     st.title("🏚️ Modes")
-     
+       
     # Start continuous loop        
     Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 
-    st.write('End of code') 
+    st.session_state.cntr += 1
+    st.write('End of code - ',st.session_state.cntr) 
 #     st.toast('End of code', icon=":material/disc_full:", duration="long")
     st.write(shared)
     return
