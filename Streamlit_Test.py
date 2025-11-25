@@ -1,559 +1,107 @@
-
-# streamlit run Streamlit_Test3.py
-
-# Werkt goed. 2 Pages.
-# Nog te doen: bij Init: data uit Gist downloaden
-
 import streamlit as st
 import time
-import requests
 import json
 
+st.set_page_config(page_title="Visibility Test", layout="wide")
+
+st.title("🔍 Streamlit Browser Visibility Test App")
+
+# --- Session state initialization ---
+defaults = {
+    "raw_visible": True,
+    "debounced_visible": True,
+    "last_hidden": None,
+    "log": []
+}
+
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
+
+
+# --- JavaScript to detect events ---
+js = """
+<script>
+function send(msg) {
+    window.parent.postMessage({streamlitMessage: msg}, "*");
+}
+
+send({init: true, in_iframe: (window.top !== window.self)});
+
+document.addEventListener("visibilitychange", () => {
+    send({
+        type: "visibilitychange",
+        raw_visible: !document.hidden,
+        timestamp: Date.now()
+    });
+});
+
+window.addEventListener("blur", () => {
+    send({
+        type: "blur",
+        raw_visible: !document.hidden,
+        timestamp: Date.now()
+    });
+});
+
+window.addEventListener("focus", () => {
+    send({
+        type: "focus",
+        raw_visible: !document.hidden,
+        timestamp: Date.now()
+    });
+});
+</script>
+"""
+
+st.components.v1.html(js, height=0)
+
+# --- Process received messages from JS ---
+msg = st.session_state.get("streamlitMessage")
+if msg and isinstance(msg, dict):
+
+    # logging events
+    if "type" in msg:
+        st.session_state.log.append(msg)
+
+    # raw visibility update
+    if "raw_visible" in msg:
+        st.session_state.raw_visible = msg["raw_visible"]
+
+    # iframe detection
+    if "in_iframe" in msg:
+        st.session_state.in_iframe = msg["in_iframe"]
+
+
+# --- Debounce logic ---
+debounce_seconds = 3
+raw = st.session_state.raw_visible
+
+if raw:
+    st.session_state.debounced_visible = True
+    st.session_state.last_hidden = None
+else:
+    if st.session_state.last_hidden is None:
+        st.session_state.last_hidden = time.time()
+    if time.time() - st.session_state.last_hidden > debounce_seconds:
+        st.session_state.debounced_visible = False
+
+
+# --- Display status ---
+st.subheader("📌 Current Status")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Raw JS Visibility", st.session_state.raw_visible)
+col2.metric("Debounced (3s)", st.session_state.debounced_visible)
+col3.metric("Running in iframe?", st.session_state.get("in_iframe"))
+
+st.divider()
+
+# Log of visibility events
+st.subheader("📜 Event Log (visibilitychange / focus / blur)")
+st.json(st.session_state.log[-20:])  # show last 20 events
+
+st.divider()
 
-
-#=====================================================================
-#--- Program constants
-GITHUB_GIST_FILENAME    = "JSON"
-
-    # TTL / polling interval in seconden
-RUN_EVERY = 2  # lager = snellere sync, maar meer requests
-
-RV_SUCCESS = 0
-RV_ERROR   = 1
-
-
-# Secrets stored in:
-# D:\Eddy\PythonProgs\Streamlit\.streamlit\secrets.toml
-GITHUB_TOKEN            = st.secrets["GITHUB_TOKEN"]
-GITHUB_GIST_DESCRIPTION = st.secrets["GITHUB_GIST_DESCRIPTION"]
-# st.write(st.secrets["GITHUB_TOKEN"])
-# st.write(st.secrets["GITHUB_GIST_DESCRIPTION"])
-
-#=====================================================================
-# Create a Github gist with JSON data.
-def Github_CreateGist_JSON(github_token, json_data, description, filename, public):
-    '''
-    Create a Github gist with JSON data.
-    Input:
-        - ..
-        - public: False = private gist. True = public gist
-    Output:
-        - RetVal: RV_SUCCESS, RV_ERROR
-        - gist_id
-    '''
-    
-    # 🔹 API URL to create a Gist
-    GIST_API_URL = "https://api.github.com/gists"
-
-    # 🔹 Define the Gist content
-    payload = {
-        "description": description,
-        "public": public,  # Set to False if you want a private Gist
-        "files": {
-            filename: {
-                "content": json.dumps(json_data, indent=4)
-            }
-        }
-    }
-
-    # 🔹 Set up the headers with authentication
-    headers = {
-        "Authorization": f"token {github_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-
-    # 🔹 Make a POST request to create the Gist
-    response = requests.post(GIST_API_URL, headers=headers, json=payload)
-  
-    # 🔹 Process the response
-    gist_id = ''
-    if response.status_code == 201:
-        gist_url = response.json()["html_url"]
-#         print(f"✅ Gist created successfully: {gist_url}")
-        
-        # Gebruik .get() voor veiligheid, voor het geval de sleutel niet bestaat
-        gist_id = response.json().get('id','') 
-
-#         print(f"Het Gist ID is: {gist_id}")
-        RetVal = RV_SUCCESS
-    else:
-        print(f"❌ Failed to create Gist: {response.json()}")
-        RetVal = RV_ERROR
-        
-    response.close()    
-    return RetVal, gist_id   
-#=====================================================================
-
-
-#=====================================================================
-def Github_Get_GistID(github_token, description):
-    '''
-    Given your Github token, and a description of your gist, this code
-    searches the Gist ID of that gist (if it exists).
-    Function returns a list with 0, 1 or more matches.
-    
-    Use an EMPTY STRING ('') as 'description' to find every possible Gist ID.
-    'description' can also be a partial match and is case INsensitive: 'eddy' finds 'Eddys test'
-    
-    Input:
-        - github_token
-        - description: text string to identify Gist 
-    Output:
-        - Found: Number of Gist(s) that was found, that match the description.
-        - Matches: List with the Gist ID's that were found (possibly empty)
-    
-    '''
-    # ==== CONFIG ====
-    API_URL = "https://api.github.com/gists"
-    headers = {
-        "Authorization": f"token {github_token}",
-        "Accept": "application/vnd.github+json"
-    }
-
-    # Alle gists van de gebruiker ophalen (inclusief private)
-    page = 1
-    Found = 0
-    matches = []
-
-    while True:
-        url = f"{API_URL}?page={page}&per_page=100"
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            print("Fout:", response.status_code, response.text)
-            break
-
-        gists = response.json()
-        if not gists:
-            break  # geen meer
-
-        for gist in gists:
-            desc = gist.get("description") or ""
-            if description.lower() in desc.lower():  # case-insensitive zoek
-                matches.append({
-                    "id": gist.get("id"),
-                    "description": desc,
-                    "url": gist.get("html_url")
-                })
-        page += 1
-        Found = len(matches)
-        
-    response.close()    
-    return Found, matches    # Returns a list with 0, 1 or more matches
-#=====================================================================
-
-
-#=====================================================================
-def Github_UpdateGist_JSON(github_token, gist_id, bestandsnaam, data): 
-    '''
-    Update data in Github JSON gist with known Gist_ID 
-    Werkt de inhoud van een bestand in een GitHub Gist bij (CircuitPython-compatibel).
-    'data' is een dictionary!
-
-    Input:
-        - github_token: Optional GitHub personal access token (needed for private gists)
-        - gist_id
-        - bestandsnaam: Naam van het bestand binnen de Gist. Case SENsitive en
-          moet een exacte match zijn. Ofwel empty string, maar dan wordt een nieuw bestand
-          aangemaakt.
-        - data: Dictionary! de NIEUWE data van het bestand in de gist. Als je data wil toevoegen moet je
-             vooraf de data uit de gist uitlezen. 'data' vervangt alle data in het bestand.
-    Output:
-        - RetVal: RV_SUCCESS, RV_ERROR
-        - txt: Tekstinhoud van het bestand als string
-    '''
-
-    # CONVERTEER DICTIONARY NAAR JSON STRING
-    # json.dumps(..., indent=4) zorgt voor een leesbare (pretty-printed) JSON-string.
-    nieuwe_data_string = json.dumps(data, indent=4)
-    #nieuwe_data_string = json.dumps(data)  #Circuitpython does not know 'indent'
-    #nieuwe_data_string = JSON_str_pretty_print(data) #Alternatief voor "json.dumps(data)"
-    
-    
-    RetVal, gist_json = Github_UpdateGist_Text(github_token, gist_id, bestandsnaam, nieuwe_data_string)
-    
-    return RetVal, gist_json    
-#=====================================================================
-
-
-
-#=====================================================================
-def Github_UpdateGist_Text(github_token, gist_id, bestandsnaam, data): 
-    '''
-    Update a Github gist with text data.
-    Werkt de inhoud van een bestand in een GitHub Gist bij (CircuitPython-compatibel).
-    
-    Deze functie gebruikt 'requests.patch()' NIET.
-    MicroPython en Circuitpython kennen die method niet.
-    Zie 'Github_UpdateGist_Text_V1()'als alternatief.  
-
-    Input:
-        - github_token: Optional GitHub personal access token (needed for private gists)
-        - gist_id
-        - bestandsnaam: Naam van het bestand binnen de Gist. Case SENsitive en
-          moet een exacte match zijn. Ofwel empty string, maar dan wordt een nieuw bestand
-          aangemaakt.
-        - data: de NIEUWE data van het bestand in de gist. Als je data wil toevoegen moet je
-             vooraf de data uit de gist uitlezen. 'data' vervangt alle data in het bestand.
-    Output:
-        - RetVal: RV_SUCCESS, RV_ERROR
-        - gist_json: De bijgewerkte gist in json formaat.
-    '''
-    gist_json = ''
-    url = "https://api.github.com/gists/" + gist_id
-    headers = {
-        "Authorization": "token " + github_token,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "X-HTTP-Method-Override": "PATCH"  # GitHub accepteert dit als PATCH
-    }
-
-    payload = {
-        "files": {
-            bestandsnaam: {"content": data}
-        }
-    }
-
-    # Gebruik POST met header override (GitHub accepteert dit)
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-    if response.status_code not in (200, 201):
-        # Error
-        print("Fout bij updaten Gist (status " + str(response.status_code) + "): " + response.text)
-        RetVal = RV_ERROR
-    else:    
-        # Success
-        gist_json = response.json()
-        RetVal = RV_SUCCESS
-        
-    response.close() 
-    return RetVal, gist_json    
-#=====================================================================
-
-#=====================================================================
-# --- Gedeelde data ---
-#     Deze data wordt gedeeld over alle verschillende open user-sessies. In verschillende browsers!
-#     Dus als 1 user een setting wijzigt, ziet een ander user dit ook (vrijwel) meteen.
-@st.cache_resource
-def Get_Shared_State():
-    # De data die hier gereturned wordt is de default data, indien er geen userdata beschikbaar zijn.
-    # Als de user eenmaal selecties begint te maken, wordt deze data ge'update met de echte userdata.
-    # Deze data wordt gedeeld tussen ALLE USERS die deze app gebruiken, op welk apparaat ook!
-    # Het is de bedoeling dat, als 1 user iets wijzigt, dat de andere users deze wijziging zo snel
-    # mogelijk te zijn krijgen op hun user interface.
-    return {
-        "group1"       : "opt1",
-        "group2"       : "red",
-        "number_input1": 45.0,
-        "time_data_last_updated": time.time()
-    }
-#=====================================================================
-
-
-#=====================================================================
-# --- Get Gist ID where the user data is stored
-def Init_Get_Gist_ID():
-
-#     st.write('Init_Get_Gist_ID.................')
-
-    if "gist_id" not in shared:
-#         shared["gist_id"] = ''
-        pass
-    else:
-        # Assume current Gist ID is still valid
-        st.write('Gist_ID defined')
-        return
-    
-    Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
-    if Found == 0:
-        # Gist not found. Create it.
-        st.toast("Gist not found. Trying to create it", icon=":material/warning:", duration="short")
-        
-        # Store the data of 'shared' dictionary in it.
-        GITHUB_GIST_FILENAME    = "JSON"
-        public      = False    # Secret Gist
-        RetVal, gist_id = Github_CreateGist_JSON(GITHUB_TOKEN, shared, GITHUB_GIST_DESCRIPTION, GITHUB_GIST_FILENAME, public)
-        if RetVal == RV_SUCCESS:
-            # Gist created succesfully
-            shared["gist_id"] = gist_id
-#             st.write("gist_id: ", gist_id)
-            st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
-        else:
-            st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
-            
-    else:
-        # Gist found
-        st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
-#         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
-        shared["gist_id"] = gists_found[0]['id']   
-    
-    st.write("gist_id: ", shared["gist_id"])
-    return
-#=====================================================================
-
-
-#=====================================================================
-def User_Action_Register():
-    # Register that there was a user action
-    st.session_state.User_Action = True
-#     st.session_state.cntr += 1
-    return
-#=====================================================================
-
-
-#=====================================================================
-@st.fragment(run_every=RUN_EVERY)
-def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY seconds
-     
-    # --- Zorg dat widget states up to date zijn!!!
-    # Indien er nieuwere shared data zijn (gewijzigd door een andere user),
-    # sync deze naar deze session_state zodat de widgets zich aanpassen.
-    # Dit overschrijft de widgets alleen wanneer er echt een *nieuwere* externe wijziging is.
-    if shared["time_data_last_updated"] > st.session_state["time_data_last_seen"]:
-        # Kopieer shared waarden naar deze sessie (zodat widgets de externe wijziging tonen)
-        st.session_state["group1"] = shared["group1"]
-        st.session_state["group2"] = shared["group2"]
-        st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-
-    # --- Render widgets (koppelen aan session_state keys) ---
-    # De widgets tonen de state, zoals opgeslagen in st.session_state (st.session_state["group1"]....)
-    choice1 = st.radio(
-        "Groep 1",
-        options=["opt1", "opt2", "opt3"],
-        key="group1",
-        on_change = User_Action_Register,
-    )
-
-    choice2 = st.radio(
-        "Groep 2",
-        options=["red", "green", "blue"],
-        key="group2",
-        on_change = User_Action_Register,        
-    )
-
-    
-    if st.session_state.User_Action == True:
-#         st.write('Process User Action:',st.session_state.User_Action)  
-        Page1_User_Action_Process()
-    else:
-#         st.write('No User Action to process',st.session_state.User_Action)
-        pass
-    return            
-#=====================================================================
-
-
-
-#=====================================================================
-# --- initialiseer de data slechts 1x per sessie ---
-#     Alle data moet in st.session_state bewaard worden. Alle andere
-#     data word gereset (gewist!) bij elke user-actie.
-def Page1_Init_Data():
-    # st.session_state : Initialiseer deze met de data uit de 'shared' data.
-    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
-    st.session_state["group1"] = shared["group1"]
-    st.session_state["group2"] = shared["group2"]
-    
-    # Houd bij welke versie van shared deze client laatst heeft gezien    
-    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
-    
-    st.session_state.User_Action = False
-#     st.session_state["gist_id"] = ''
-#     Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
-#     if Found == 0:
-#         # Gist not found. Create it.
-#         st.toast("Gist not found. Trying to create it", icon=":material/warning:", duration="short")
-#         
-#         # Store the data of 'shared' dictionary in it.
-#         GITHUB_GIST_FILENAME    = "JSON"
-#         public      = False    # Secret Gist
-#         RetVal, gist_id = Github_CreateGist_JSON(GITHUB_TOKEN, shared, GITHUB_GIST_DESCRIPTION, GITHUB_GIST_FILENAME, public)
-#         if RetVal == RV_SUCCESS:
-#             # Gist created succesfully
-#             st.session_state["gist_id"] = gist_id
-# #             st.write("gist_id: ", gist_id)
-#             st.toast("Gist created succesfully!", icon=":material/thumb_up:", duration="short")
-#         else:
-#             st.toast("Could not create Gist!", icon=":material/disc_full:", duration="long")
-#             
-#     else:
-#         # Gist found
-#         st.toast("Gist found!", icon=":material/thumb_up:", duration="short")
-# #         st.write(gists_found[0]['id'],'  --  ', gists_found[0]['description'])
-#         st.session_state["gist_id"] = gists_found[0]['id']   
-#     
-# #     st.write("gist_id: ", st.session_state["gist_id"])
-    return
-#=====================================================================
-
-
-
-#=====================================================================
-def Page1_Modes():
-    # --- Page1 Modes
-
-    # Create shared data dictionary (data is shared among all users/open sessions!!)
-#     shared = Get_Shared_State()
-
-    # --- initialiseer de data slechts 1x per sessie ---
-    #     Alle data moet in st.session_state bewaard worden. Alle andere
-    #     data word gereset bij elke user-actie.
-#     if "time_data_last_seen" not in st.session_state:
-#         # st.session_state is empty. Init it.
-#         Page1_Init_Data()
-#     else:
-#         st.toast("st.session_state already initialised", duration="short")
-#         st.write(st.session_state)
-    Page1_Init_Data()
-    
-    # Title of the Page 
-    st.title("🏚️ Modes")
-     
-    # Start continuous loop        
-    Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
-
-    st.write('End of code') 
-#     st.toast('End of code', icon=":material/disc_full:", duration="long")
-    st.write(shared)
-    return
-#=====================================================================
-
-
-#=====================================================================
-def Page1_User_Action_Process():
-    # Process the user action
-    st.session_state.User_Action = False  # This user action is (being) processed
-    
-    st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
-
-    # Store the widget states in the shared data (for all users to see)
-    shared["group1"] = st.session_state["group1"]
-    shared["group2"] = st.session_state["group2"]
-    
-    shared["time_data_last_updated"] = time.time()
-    # Deze client zag nu de nieuwste update (eigen wijziging)
-    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-    
-    # Store changed data in Github Gist
-    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, shared["gist_id"], GITHUB_GIST_FILENAME, shared)
-
-    if RetVal == RV_SUCCESS:
-        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
-    else:           
-        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
-    return
-#=====================================================================
-
-
-#=====================================================================
-@st.fragment(run_every=RUN_EVERY)
-def Page2_fragment():  #<-- This code is automatically run every RUN_EVERY seconds
-     
-    # --- Zorg dat widget states up to date zijn!!!
-    # Indien er nieuwere shared data zijn (gewijzigd door een andere user),
-    # sync deze naar deze session_state zodat de widgets zich aanpassen.
-    # Dit overschrijft de widgets alleen wanneer er echt een *nieuwere* externe wijziging is.
-    if shared["time_data_last_updated"] > st.session_state["time_data_last_seen"]:
-        # Kopieer shared waarden naar deze sessie (zodat widgets de externe wijziging tonen)
-        st.session_state["number_input1"] = shared["number_input1"]
-        st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-
-    # --- Render widgets (koppelen aan session_state keys) ---
-    # De widgets tonen de state, zoals opgeslagen in st.session_state (st.session_state["group1"]....)
-    number = st.number_input("Insert a number",
-                             step=0.5,
-                             on_change = User_Action_Register,
-                             key="number_input1",)
-       
-    if st.session_state.User_Action == True:
-#         st.write('Process User Action:',st.session_state.User_Action)  
-        Page2_User_Action_Process()
-    else:
-#         st.write('No User Action to process',st.session_state.User_Action)
-        pass
-    return            
-#=====================================================================
-
-
-#=====================================================================
-# --- initialiseer de data slechts 1x per sessie ---
-#     Alle data moet in st.session_state bewaard worden. Alle andere
-#     data word gereset (gewist!) bij elke user-actie.
-def Page2_Init_Data():
-    # st.session_state is leeg. Initialiseer deze met de data uit de 'shared' data.
-    # de 'shared' data wordt gedeeld tussen elke user die deze app gebruikt!
-    st.session_state["number_input1"] = shared["number_input1"]
-
-    # Houd bij welke versie van shared deze client laatst heeft gezien    
-    st.session_state["time_data_last_seen"] = 0.0  #shared["time_data_last_updated"]   #0.0
-    
-    st.session_state.User_Action = False
-    return
-#=====================================================================
-
-
-
-
-#=====================================================================
-def Page2_Settings():
-    # --- Page2_Settings
-
-    Page2_Init_Data()
-    
-    # Title of the Page 
-    st.title("⚙️ Settings")
-     
-    # Start continuous loop        
-    Page2_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
-
-    st.write('End of code') 
-#     st.toast('End of code', icon=":material/disc_full:", duration="long")
-    st.write(shared)
-    return
-#=====================================================================
-
-
-#=====================================================================
-def Page2_User_Action_Process():
-    # Process the user action
-    st.session_state.User_Action = False  # This user action is (being) processed
-    
-#     st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
-
-    # Store the widget states in the shared data (for all users to see)
-    shared["number_input1"] = st.session_state["number_input1"]
-   
-   
-    shared["time_data_last_updated"] = time.time()
-    # Deze client zag nu de nieuwste update (eigen wijziging)
-    st.session_state["time_data_last_seen"] = shared["time_data_last_updated"]
-    
-    # Store changed data in Github Gist
-    RetVal, resultaat = Github_UpdateGist_JSON(GITHUB_TOKEN, shared["gist_id"], GITHUB_GIST_FILENAME, shared)
-
-    if RetVal == RV_SUCCESS:
-        st.toast("Modified data stored in Gist!", icon=":material/thumb_up:", duration="short")
-    else:           
-        st.toast("Could not store data in Gist!", icon=":material/disc_full:", duration="long")    
-    return
-#=====================================================================
-
-    
-#=====================================================================
-#--- Main program
-def here():
-    pass
-
-# App caption in browser
-st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
-
-shared = Get_Shared_State()
-Init_Get_Gist_ID()    # Get Gist ID
-
-Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/wifi_home:")
-Settings_page = st.Page(Page2_Settings, title="Settings", icon=":material/settings:")
-
-pg = st.navigation([Modes_page, Settings_page])
-# pg = st.navigation([Page1_Modes, page_2])
-
-pg.run()
-
-
+st.write("⏱ Last hidden timestamp:", st.session_state.last_hidden)
