@@ -16,10 +16,13 @@ import json
 GITHUB_GIST_FILENAME    = "JSON"
 
     # TTL / polling interval in seconden
-RUN_EVERY = 4  # lager = snellere sync, maar meer requests
+RUN_EVERY = 3  # lager = snellere sync, maar meer requests
 
 RV_SUCCESS = 0
 RV_ERROR   = 1
+
+DELAY_MAX  = 20   # seconds. Max delay when no user activity
+DELAY_INCR = 0.40 # seconds. Increment delay with this amount every RUN_EVERY seconds
 
 
 # Secrets stored in:
@@ -244,6 +247,7 @@ def Get_Shared_State():
         "group1"       : "opt1",
         "group2"       : "red",
         "number_input1": 45.0,
+        "time_delay"   : 0.0,
         "time_data_last_updated": time.time()
     }
 #=====================================================================
@@ -260,7 +264,7 @@ def Init_Get_Gist_ID():
         pass
     else:
         # Assume current Gist ID is still valid
-        st.write('Gist_ID defined')
+#         st.write('Gist_ID defined')
         return
     
     Found, gists_found = Github_Get_GistID(GITHUB_TOKEN, GITHUB_GIST_DESCRIPTION)
@@ -350,6 +354,8 @@ def Is_tab_visible():
 def User_Action_Register():
     # Register that there was a user action
     st.session_state.User_Action = True
+    shared["time_delay"] = 0.0
+    
 #     st.session_state.cntr += 1
     return
 #=====================================================================
@@ -389,13 +395,30 @@ def Page1_fragment():  #<-- This code is automatically run every RUN_EVERY secon
         on_change = User_Action_Register,        
     )
 
-    
+    st.session_state.cntr += 1
+    st.write('st.session_state.cntr: ',st.session_state.cntr)
+    current_time = time.strftime("%H:%M:%S")
+    st.metric("Current time", current_time)
+        
     if st.session_state.User_Action == True:
 #         st.write('Process User Action:',st.session_state.User_Action)  
         Page1_User_Action_Process()
     else:
 #         st.write('No User Action to process',st.session_state.User_Action)
-        pass
+#         pass
+        st.write(shared)
+        time.sleep(shared["time_delay"])
+        shared["time_delay"] += DELAY_INCR
+        shared["time_delay"] = min(shared["time_delay"], DELAY_MAX) 
+
+
+#         for i in range(0,10):
+#             time.sleep(1)
+#             if st.session_state.User_Action == True:
+#                 st.write('breaking time out loop')
+#                 time.sleep(3)
+#                 break
+            
     return            
 #=====================================================================
 
@@ -470,10 +493,10 @@ def Page1_Modes():
     # Start continuous loop        
     Page1_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 
-    st.session_state.cntr += 1
-    st.write('End of code - ',st.session_state.cntr) 
+#     st.session_state.cntr += 1
+#     st.write('End of code - ',st.session_state.cntr) 
 #     st.toast('End of code', icon=":material/disc_full:", duration="long")
-    st.write(shared)
+#     st.write(shared)
     return
 #=====================================================================
 
@@ -483,7 +506,7 @@ def Page1_User_Action_Process():
     # Process the user action
     st.session_state.User_Action = False  # This user action is (being) processed
     
-    st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
+#     st.write('st.session_state:',st.session_state["group1"],st.session_state["group2"])
 
     # Store the widget states in the shared data (for all users to see)
     shared["group1"] = st.session_state["group1"]
@@ -565,9 +588,9 @@ def Page2_Settings():
     # Start continuous loop        
     Page2_fragment()  #<-- This code is automatically run every RUN_EVERY seconds
 
-    st.write('End of code') 
+#     st.write('End of code') 
 #     st.toast('End of code', icon=":material/disc_full:", duration="long")
-    st.write(shared)
+#     st.write(shared)
     return
 #=====================================================================
 
@@ -597,7 +620,7 @@ def Page2_User_Action_Process():
     return
 #=====================================================================
 
-    
+   
 #=====================================================================
 #--- Main program
 def here():
@@ -607,6 +630,7 @@ def here():
 st.set_page_config(page_title="Eddys Home Control", page_icon="🔁")
 
 shared = Get_Shared_State()
+
 Init_Get_Gist_ID()    # Get Gist ID
 
 Modes_page    = st.Page(Page1_Modes, title="Modes", icon=":material/wifi_home:")
