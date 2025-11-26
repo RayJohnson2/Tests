@@ -16,13 +16,13 @@ import json
 GITHUB_GIST_FILENAME    = "JSON"
 
     # TTL / polling interval in seconden
-RUN_EVERY = 3  # lager = snellere sync, maar meer requests
+RUN_EVERY = 1  # lager = snellere sync, maar meer requests
 
 RV_SUCCESS = 0
 RV_ERROR   = 1
 
 DELAY_MAX  = 20   # seconds. Max delay when no user activity
-DELAY_INCR = 0.40 # seconds. Increment delay with this amount every RUN_EVERY seconds
+DELAY_INCR = 0.10 # seconds. Increment delay with this amount every RUN_EVERY seconds
 
 
 # Secrets stored in:
@@ -640,5 +640,6 @@ pg = st.navigation([Modes_page, Settings_page])
 # pg = st.navigation([Page1_Modes, page_2])
 
 pg.run()
+
 
 
